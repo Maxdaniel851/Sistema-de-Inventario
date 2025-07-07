@@ -1122,9 +1122,14 @@
 
         // Función para enviar datos a Google Sheets
         async function sendToGoogleSheets(productData) {
-            const formula = formulas[productData.name];
+            // Construir el nombre de la fórmula basado en el producto y presentación
+            let formulaKey = `${productData.name.split(' (')[0]} (${productData.name.match(/\(([^)]+)\)/)?.[1] || ''})`;
+            
+            const formula = formulas[formulaKey];
             if (!formula) {
-                throw new Error('Fórmula no encontrada para el producto');
+                console.error('Fórmula no encontrada para:', formulaKey);
+                console.log('Fórmulas disponibles:', Object.keys(formulas));
+                throw new Error(`Fórmula no encontrada para el producto: ${formulaKey}`);
             }
 
             const records = [];
@@ -1470,7 +1475,42 @@
                             </div>
                         `;
                     } else {
-                        formulaHTML = '<p style="color: #ff6b6b; margin-top: 20px;">⚠️ Fórmula no encontrada</p>';
+                        // Intentar buscar la fórmula con el nombre del producto base + presentación
+                        const productBaseName = product.name.split(' (')[0];
+                        const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
+                        const formulaKey = `${productBaseName} (${presentation})`;
+                        
+                        if (formulas[formulaKey]) {
+                            const totalIngredients = {};
+                            
+                            formulas[formulaKey].forEach(ingredient => {
+                                const totalNeeded = ingredient.quantity * product.quantity;
+                                totalIngredients[ingredient.name] = totalNeeded;
+                            });
+                            
+                            formulaHTML = `
+                                <h4 style="margin-top: 20px; color: #b3b3e6;">⚗️ Fórmula por unidad:</h4>
+                                <div class="ingredients-list">
+                                    ${formulas[formulaKey].map(ing => `
+                                        <div class="ingredient-item">
+                                            <span>${ing.name}</span>
+                                            <span>${ing.quantity} ${getUnit(ing.name)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <h4 style="margin-top: 20px; color: #9b59b6;">🧮 Total requerido:</h4>
+                                <div class="ingredients-list">
+                                    ${Object.entries(totalIngredients).map(([name, total]) => `
+                                        <div class="ingredient-item">
+                                            <span><strong>${name}</strong></span>
+                                            <span><strong>${total.toFixed(2)} ${getUnit(name)}</strong></span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                        } else {
+                            formulaHTML = `<p style="color: #ff6b6b; margin-top: 20px;">⚠️ Fórmula no encontrada para: ${formulaKey}</p>`;
+                        }
                     }
 
                     const typeIcon = selectedProduct && selectedProduct.type === 'packaging' ? '📦' : '⚗️';
@@ -1528,6 +1568,22 @@
                             rawMaterials[ingredient.name] = totalNeeded;
                         }
                     });
+                } else {
+                    // Intentar buscar la fórmula con el nombre del producto base + presentación
+                    const productBaseName = product.name.split(' (')[0];
+                    const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
+                    const formulaKey = `${productBaseName} (${presentation})`;
+                    
+                    if (formulas[formulaKey]) {
+                        formulas[formulaKey].forEach(ingredient => {
+                            const totalNeeded = ingredient.quantity * product.quantity;
+                            if (rawMaterials[ingredient.name]) {
+                                rawMaterials[ingredient.name] += totalNeeded;
+                            } else {
+                                rawMaterials[ingredient.name] = totalNeeded;
+                            }
+                        });
+                    }
                 }
             });
 
