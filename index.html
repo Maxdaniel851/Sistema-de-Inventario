@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Inventario - Materia Prima</title>
+    <title>Sistema de Inventario - Productos Finalizados</title>
     <style>
         * {
             margin: 0;
@@ -207,7 +207,6 @@
             color: #e6e6ff;
         }
 
-        /* Estilos específicos para select */
         select {
             background: linear-gradient(145deg, #3c3c6e 0%, #2c2c54 100%);
             color: #e6e6ff;
@@ -284,14 +283,6 @@
             color: #e6e6ff;
         }
 
-        .dropdown-header {
-            padding: 12px 15px;
-            background: linear-gradient(90deg, #663399, #9b59b6);
-            color: white;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-
         .form-container {
             display: none;
         }
@@ -363,18 +354,6 @@
             color: #9b59b6;
             font-weight: 600;
             margin-bottom: 20px;
-        }
-
-        .ingredients-list {
-            margin-top: 15px;
-        }
-
-        .ingredient-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(155, 89, 182, 0.2);
-            color: #b3b3e6;
         }
 
         .totals-section {
@@ -484,7 +463,7 @@
     <div class="container">
         <div class="header">
             <h1>Sistema de Inventario</h1>
-            <p>Control de Materia Prima a Productos Finalizados</p>
+            <p>Control de Productos Finalizados</p>
         </div>
 
         <div class="main-content">
@@ -605,18 +584,22 @@
 
             <!-- Totales -->
             <div class="totals-section">
-                <h2>📊 Resumen Total de Materia Prima</h2>
+                <h2>📊 Resumen Total de Producción</h2>
                 <div class="totals-grid">
                     <div class="total-item">
                         <div class="total-value" id="totalProducts">0</div>
                         <div class="total-label">Productos Finalizados</div>
                     </div>
                     <div class="total-item">
-                        <div class="total-value" id="totalRawMaterials">0</div>
-                        <div class="total-label">Tipos de Materia Prima</div>
+                        <div class="total-value" id="totalPrepared">0</div>
+                        <div class="total-label">Productos Preparados</div>
+                    </div>
+                    <div class="total-item">
+                        <div class="total-value" id="totalPackaged">0</div>
+                        <div class="total-label">Productos Empacados</div>
                     </div>
                 </div>
-                <div id="rawMaterialsBreakdown"></div>
+                <div id="productBreakdown"></div>
             </div>
         </div>
     </div>
@@ -629,214 +612,6 @@
         let products = [];
         let dailyProduction = {};
         let currentAction = null;
-        
-        // Función para obtener unidades para productos de empaque
-        function getUnitForPackaging(productName, presentation) {
-            const packagingUnits = {
-                'Galón': 'galón',
-                '20Lts': 'litros',
-                'Litro': 'litro',
-                '1/2 Litro': 'litro',
-                'Kg': 'kg',
-                '1/2 Kg': 'kg'
-            };
-            return packagingUnits[presentation] || 'unidades';
-        }
-        
-        // Fórmulas preconfiguradas
-        const formulas = {
-            "AMBIENTADOR CONCENTRADO (1L)": [
-                { name: "Fragancia", quantity: 110 },
-                { name: "Nonil Fenol", quantity: 70 },
-                { name: "Dodigen", quantity: 10 },
-                { name: "Alcohol Etílico", quantity: 240 },
-                { name: "Agua", quantity: 570 }
-            ],
-            "AMBIENTADOR CONCENTRADO (1 GALÓN)": [
-                { name: "Fragancia", quantity: 440 },
-                { name: "Nonil Fenol", quantity: 280 },
-                { name: "Dodigen", quantity: 40 },
-                { name: "Alcohol Etílico", quantity: 960 },
-                { name: "Agua", quantity: 2065 }
-            ],
-            "SILICONA (60ml)": [
-                { name: "Silicona", quantity: 30 },
-                { name: "Agua", quantity: 30 }
-            ],
-            "LLANTÍN (1L)": [
-                { name: "Glicerina", quantity: 500 },
-                { name: "Silicona", quantity: 50 },
-                { name: "Procide", quantity: 7.5 },
-                { name: "Color Azul", quantity: 8 },
-                { name: "Agua", quantity: 434.5 }
-            ],
-            "LLANTÍN (20L)": [
-                { name: "Glicerina", quantity: 2500 },
-                { name: "Silicona", quantity: 250 },
-                { name: "Procide", quantity: 35 },
-                { name: "Color Azul", quantity: 30 },
-                { name: "Agua", quantity: 17185 }
-            ],
-            "LIMPIDO AL 5% (1 GALÓN)": [
-                { name: "Hipoclorito de Sodio al 13%", quantity: 1500 },
-                { name: "Agua", quantity: 2285 }
-            ],
-            "LIMPIDO AL 5% (20L)": [
-                { name: "Hipoclorito de Sodio al 13%", quantity: 8000 },
-                { name: "Agua", quantity: 12000 }
-            ],
-            "DESENGRASANTE (1 GALÓN)": [
-                { name: "Agua", quantity: 1400 },
-                { name: "Soda en Escama", quantity: 60 },
-                { name: "Ácido Sulfónico", quantity: 400 },
-                { name: "Varsol", quantity: 308 },
-                { name: "Nonil", quantity: 400 },
-                { name: "Citronela", quantity: 10 },
-                { name: "Color Amarillo", quantity: 5 }
-            ],
-            "DESENGRASANTE (20L)": [
-                { name: "Agua", quantity: 10000 },
-                { name: "Soda en Escama", quantity: 300 },
-                { name: "Ácido Sulfónico", quantity: 2000 },
-                { name: "Varsol", quantity: 1530 },
-                { name: "Nonil", quantity: 2000 },
-                { name: "Citronela", quantity: 60 },
-                { name: "Color Amarillo", quantity: 20 }
-            ],
-            "DETERGENTE DE MANOS (1L)": [
-                { name: "Agua", quantity: 300 },
-                { name: "Procide", quantity: 2 },
-                { name: "Genapol al 70%", quantity: 100 },
-                { name: "Betaína", quantity: 50 },
-                { name: "Fragancia", quantity: 5 },
-                { name: "Sal", quantity: 20 },
-                { name: "Color", quantity: 2 }
-            ],
-            "DETERGENTE DE MANOS (20L)": [
-                { name: "Agua", quantity: 10000 },
-                { name: "Procide", quantity: 40 },
-                { name: "Genapol al 70%", quantity: 2000 },
-                { name: "Betaína", quantity: 1000 },
-                { name: "Fragancia", quantity: 60 },
-                { name: "Sal", quantity: 500 },
-                { name: "Color", quantity: 30 }
-            ],
-            "LIMPIAVIDRIOS (1L)": [
-                { name: "Agua", quantity: 916 },
-                { name: "Alcohol Propílico", quantity: 64 },
-                { name: "Genapol", quantity: 5 },
-                { name: "Butil Glicol", quantity: 15 },
-                { name: "Fragancia Brisa Marina", quantity: 5 },
-                { name: "Color", quantity: 2 }
-            ],
-            "LIMPIAVIDRIOS (1 GALÓN)": [
-                { name: "Agua", quantity: 3664 },
-                { name: "Alcohol Propílico", quantity: 256 },
-                { name: "Genapol", quantity: 20 },
-                { name: "Butil Glicol", quantity: 60 },
-                { name: "Fragancia Brisa Marina", quantity: 20 },
-                { name: "Color", quantity: 8 }
-            ],
-            "LIMPIAVIDRIOS (20L)": [
-                { name: "Agua", quantity: 18320 },
-                { name: "Alcohol Propílico", quantity: 1280 },
-                { name: "Genapol", quantity: 100 },
-                { name: "Butil Glicol", quantity: 300 },
-                { name: "Fragancia Brisa Marina", quantity: 100 },
-                { name: "Color", quantity: 40 }
-            ],
-            "DESINFECTANTE (1L)": [
-                { name: "Fragancia", quantity: 20 },
-                { name: "Nonil", quantity: 30 },
-                { name: "Dodigen", quantity: 10 },
-                { name: "Color", quantity: 3 },
-                { name: "Agua", quantity: 937 }
-            ],
-            "DESINFECTANTE (1 GALÓN)": [
-                { name: "Fragancia", quantity: 80 },
-                { name: "Nonil", quantity: 120 },
-                { name: "Dodigen", quantity: 40 },
-                { name: "Color", quantity: 10 },
-                { name: "Agua", quantity: 3535 }
-            ],
-            "DESINFECTANTE (20L)": [
-                { name: "Fragancia", quantity: 330 },
-                { name: "Nonil", quantity: 600 },
-                { name: "Dodigen", quantity: 200 },
-                { name: "Color", quantity: 50 },
-                { name: "Agua", quantity: 18820 }
-            ],
-            "DESINFECTANTE CANELA/LIMÓN (20L)": [
-                { name: "Fragancia", quantity: 330 },
-                { name: "Nonil", quantity: 750 },
-                { name: "Dodigen", quantity: 200 },
-                { name: "Color", quantity: 50 },
-                { name: "Agua", quantity: 18670 }
-            ],
-            "RESTAURADOR DE PARTES NEGRAS (1L)": [
-                { name: "Glicerina", quantity: 600 },
-                { name: "Silicona", quantity: 25 },
-                { name: "Procide", quantity: 2.5 },
-                { name: "Fragancia Aylen", quantity: 5 },
-                { name: "Color Rojo Claro", quantity: 3 },
-                { name: "Agua", quantity: 364.5 }
-            ],
-            "RESTAURADOR DE PARTES NEGRAS (1 GALÓN)": [
-                { name: "Glicerina", quantity: 2500 },
-                { name: "Silicona", quantity: 100 },
-                { name: "Procide", quantity: 40 },
-                { name: "Fragancia Aylen", quantity: 20 },
-                { name: "Color Rojo Claro", quantity: 10 },
-                { name: "Agua", quantity: 1115 }
-            ],
-            "DETERGENTE LÍQUIDO (20L)": [
-                { name: "Agua", quantity: 10000 },
-                { name: "Soda en Escama", quantity: 560 },
-                { name: "Ácido Sulfónico", quantity: 4000 },
-                { name: "Procide", quantity: 40 },
-                { name: "Betaína", quantity: 100 }
-            ],
-            "SHAMPOO POLARIZADO (20L)": [
-                { name: "Genapol al 70%", quantity: 1800 },
-                { name: "Betaína", quantity: 800 },
-                { name: "Cocoamida", quantity: 400 },
-                { name: "Procide", quantity: 40 },
-                { name: "Sal", quantity: 200 },
-                { name: "Fragancia Piña Colada", quantity: 60 },
-                { name: "Color", quantity: 30 },
-                { name: "Agua", quantity: 16670 }
-            ],
-            "SHAMPOO VEHÍCULO (40L)": [
-                { name: "Agua", quantity: 15000 },
-                { name: "NaOH (Soda)", quantity: 225 },
-                { name: "Ácido Sulfónico", quantity: 1600 },
-                { name: "Genapol AL70%", quantity: 1600 },
-                { name: "Procide", quantity: 70 },
-                { name: "Betaína", quantity: 500 },
-                { name: "Sal X Libra", quantity: 2 },
-                { name: "Color Amarillo", quantity: 8 }
-            ],
-            "SHAMPOO VEHÍCULO (80L)": [
-                { name: "Agua", quantity: 71198 },
-                { name: "NaOH (Soda)", quantity: 450 },
-                { name: "Ácido Sulfónico", quantity: 3200 },
-                { name: "Genapol AL70%", quantity: 3200 },
-                { name: "Procide", quantity: 140 },
-                { name: "Betaína", quantity: 1000 },
-                { name: "Sal", quantity: 1600 },
-                { name: "Color Amarillo", quantity: 80 }
-            ],
-            "SHAMPOO VEHÍCULO (160L)": [
-                { name: "Agua", quantity: 142398 },
-                { name: "NaOH (Soda)", quantity: 900 },
-                { name: "Ácido Sulfónico", quantity: 6400 },
-                { name: "Genapol AL70%", quantity: 6400 },
-                { name: "Procide", quantity: 280 },
-                { name: "Betaína", quantity: 2000 },
-                { name: "Sal", quantity: 1600 },
-                { name: "Color Amarillo", quantity: 160 }
-            ]
-        };
 
         // Lista de productos disponibles
         const allProducts = [
@@ -1120,36 +895,21 @@
             });
         }
 
-        // Función para enviar datos a Google Sheets
+        // Función simplificada para enviar datos a Google Sheets
         async function sendToGoogleSheets(productData) {
-            // Construir el nombre de la fórmula basado en el producto y presentación
-            let formulaKey = `${productData.name.split(' (')[0]} (${productData.name.match(/\(([^)]+)\)/)?.[1] || ''})`;
-            
-            const formula = formulas[formulaKey];
-            if (!formula) {
-                console.error('Fórmula no encontrada para:', formulaKey);
-                console.log('Fórmulas disponibles:', Object.keys(formulas));
-                throw new Error(`Fórmula no encontrada para el producto: ${formulaKey}`);
-            }
-
-            const records = [];
             const currentTime = new Date().toLocaleTimeString('es-ES');
 
-            formula.forEach(ingredient => {
-                const totalNeeded = ingredient.quantity * productData.quantity;
-                records.push({
-                    date: productData.date,
-                    time: currentTime,
-                    employee: 'Sistema',
-                    product: productData.name.split(' (')[0],
-                    presentation: productData.name.match(/\(([^)]+)\)/)?.[1] || '',
-                    fragrance: productData.fragrance || 'N/A',
-                    quantity: productData.quantity,
-                    material: ingredient.name,
-                    materialQuantity: totalNeeded.toFixed(2),
-                    unit: getUnit(ingredient.name)
-                });
-            });
+            // Crear registro simplificado - solo producto, presentación y cantidad
+            const record = {
+                date: productData.date,
+                time: currentTime,
+                employee: 'Sistema',
+                product: productData.name.split(' (')[0], // Nombre del producto sin presentación
+                presentation: productData.name.match(/\(([^)]+)\)/)?.[1] || '', // Solo la presentación
+                fragrance: productData.fragrance || 'N/A',
+                quantity: productData.quantity,
+                action: productData.action // 'prepare' o 'package'
+            };
 
             const response = await fetch(GOOGLE_SHEETS_URL, {
                 method: 'POST',
@@ -1157,7 +917,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ records })
+                body: JSON.stringify({ record: record })
             });
 
             return { success: true };
@@ -1264,7 +1024,7 @@
             }
         }
 
-        // Agregar producto EMPACAR
+        // Agregar producto EMPACAR - AHORA TAMBIÉN ENVÍA A GOOGLE SHEETS
         async function addPackageProduct() {
             const selectedProductName = document.getElementById('selectedPackageProduct').value;
             const presentation = document.getElementById('packageProductPresentation').value;
@@ -1295,9 +1055,12 @@
             const statusDiv = document.getElementById('packageSaveStatus');
             
             saveButton.innerHTML = '<span class="loading-spinner"></span> Guardando...';
-            statusDiv.innerHTML = '<div style="color: #9b59b6;">📦 Registrando empaque...</div>';
+            statusDiv.innerHTML = '<div style="color: #9b59b6;">📦 Enviando datos a Google Sheets...</div>';
 
             try {
+                // AHORA SÍ ENVÍA A GOOGLE SHEETS
+                await sendToGoogleSheets(productRecord);
+                
                 products.push(productRecord);
                 
                 if (!dailyProduction[date]) {
@@ -1323,51 +1086,30 @@
                 }, 3000);
 
             } catch (error) {
-                saveButton.textContent = '⚠️ Error';
-                statusDiv.innerHTML = `<div style="color: #ff9500;">⚠️ Error: ${error.message}</div>`;
+                // Si falla el envío a Google Sheets, guardar localmente
+                products.push(productRecord);
+                
+                if (!dailyProduction[date]) {
+                    dailyProduction[date] = [];
+                }
+                dailyProduction[date].push(productRecord);
+
+                updateProductsList();
+                updateTotals();
+                
+                saveButton.textContent = '⚠️ Guardado Local';
+                statusDiv.innerHTML = `<div style="color: #ff9500;">⚠️ Error conectando con Google Sheets. Datos guardados localmente.</div>`;
+                
+                // Limpiar formulario
+                document.getElementById('packageProductSearch').value = '';
+                document.getElementById('selectedPackageProduct').value = '';
+                document.getElementById('packageProductPresentation').innerHTML = '<option value="">Primero seleccione un producto</option>';
+                document.getElementById('packageProductQuantity').value = '';
                 
                 setTimeout(() => {
                     saveButton.textContent = 'Registrar Empaque';
                 }, 3000);
             }
-        }
-
-        // Función para obtener unidades
-        function getUnit(ingredientName) {
-            const units = {
-                'Agua': 'ml',
-                'Fragancia': 'ml',
-                'Nonil Fenol': 'ml',
-                'Nonil': 'ml',
-                'Dodigen': 'ml',
-                'Alcohol Etílico': 'ml',
-                'Alcohol Propílico': 'ml',
-                'Silicona': 'ml',
-                'Glicerina': 'ml',
-                'Procide': 'ml',
-                'Butil Glicol': 'ml',
-                'Fragancia Brisa Marina': 'ml',
-                'Fragancia Aylen': 'ml',
-                'Fragancia Piña Colada': 'ml',
-                'Hipoclorito de Sodio al 13%': 'ml',
-                'Genapol al 70%': 'g',
-                'Genapol': 'ml',
-                'Genapol AL70%': 'g',
-                'Betaína': 'g',
-                'Cocoamida': 'g',
-                'Soda en Escama': 'g',
-                'NaOH (Soda)': 'g',
-                'Ácido Sulfónico': 'g',
-                'Varsol': 'g',
-                'Citronela': 'g',
-                'Sal': 'g',
-                'Sal X Libra': 'g',
-                'Color': 'ml',
-                'Color Azul': 'ml',
-                'Color Rojo Claro': 'ml',
-                'Color Amarillo': 'ml'
-            };
-            return units[ingredientName] || 'unidades';
         }
 
         // Actualizar lista de productos
@@ -1414,106 +1156,16 @@
                     const card = document.createElement('div');
                     card.className = 'product-card';
                     
-                    let formulaHTML = '';
                     let actionBadge = '';
+                    let typeIcon = '';
                     
                     if (product.action === 'prepare') {
                         actionBadge = '<div style="display: inline-block; background: linear-gradient(45deg, #663399, #9b59b6); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; margin-bottom: 15px;">⚗️ PREPARADO</div>';
+                        typeIcon = '⚗️';
                     } else if (product.action === 'package') {
                         actionBadge = '<div style="display: inline-block; background: linear-gradient(45deg, #8e24aa, #9c27b0); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; margin-bottom: 15px;">📦 EMPACADO</div>';
+                        typeIcon = '📦';
                     }
-                    
-                    const selectedProduct = allProducts.find(p => p.name === product.name.split(' (')[0]);
-                    
-                    if (selectedProduct && selectedProduct.type === 'packaging') {
-                        const productName = selectedProduct.name;
-                        const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
-                        const unit = getUnitForPackaging(productName, presentation);
-                        
-                        formulaHTML = `
-                            <h4 style="margin-top: 20px; color: #b3b3e6;">📦 Producto de Empaque:</h4>
-                            <div class="ingredients-list">
-                                <div class="ingredient-item">
-                                    <span>${productName}</span>
-                                    <span>1:1 ratio</span>
-                                </div>
-                            </div>
-                            <h4 style="margin-top: 20px; color: #9b59b6;">📦 Total empacado:</h4>
-                            <div class="ingredients-list">
-                                <div class="ingredient-item">
-                                    <span><strong>${productName}</strong></span>
-                                    <span><strong>${product.quantity} ${unit}</strong></span>
-                                </div>
-                            </div>
-                        `;
-                    } else if (formulas[product.name]) {
-                        const totalIngredients = {};
-                        
-                        formulas[product.name].forEach(ingredient => {
-                            const totalNeeded = ingredient.quantity * product.quantity;
-                            totalIngredients[ingredient.name] = totalNeeded;
-                        });
-                        
-                        formulaHTML = `
-                            <h4 style="margin-top: 20px; color: #b3b3e6;">⚗️ Fórmula por unidad:</h4>
-                            <div class="ingredients-list">
-                                ${formulas[product.name].map(ing => `
-                                    <div class="ingredient-item">
-                                        <span>${ing.name}</span>
-                                        <span>${ing.quantity} ${getUnit(ing.name)}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <h4 style="margin-top: 20px; color: #9b59b6;">🧮 Total requerido:</h4>
-                            <div class="ingredients-list">
-                                ${Object.entries(totalIngredients).map(([name, total]) => `
-                                    <div class="ingredient-item">
-                                        <span><strong>${name}</strong></span>
-                                        <span><strong>${total.toFixed(2)} ${getUnit(name)}</strong></span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        `;
-                    } else {
-                        // Intentar buscar la fórmula con el nombre del producto base + presentación
-                        const productBaseName = product.name.split(' (')[0];
-                        const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
-                        const formulaKey = `${productBaseName} (${presentation})`;
-                        
-                        if (formulas[formulaKey]) {
-                            const totalIngredients = {};
-                            
-                            formulas[formulaKey].forEach(ingredient => {
-                                const totalNeeded = ingredient.quantity * product.quantity;
-                                totalIngredients[ingredient.name] = totalNeeded;
-                            });
-                            
-                            formulaHTML = `
-                                <h4 style="margin-top: 20px; color: #b3b3e6;">⚗️ Fórmula por unidad:</h4>
-                                <div class="ingredients-list">
-                                    ${formulas[formulaKey].map(ing => `
-                                        <div class="ingredient-item">
-                                            <span>${ing.name}</span>
-                                            <span>${ing.quantity} ${getUnit(ing.name)}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                                <h4 style="margin-top: 20px; color: #9b59b6;">🧮 Total requerido:</h4>
-                                <div class="ingredients-list">
-                                    ${Object.entries(totalIngredients).map(([name, total]) => `
-                                        <div class="ingredient-item">
-                                            <span><strong>${name}</strong></span>
-                                            <span><strong>${total.toFixed(2)} ${getUnit(name)}</strong></span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            `;
-                        } else {
-                            formulaHTML = `<p style="color: #ff6b6b; margin-top: 20px;">⚠️ Fórmula no encontrada para: ${formulaKey}</p>`;
-                        }
-                    }
-
-                    const typeIcon = selectedProduct && selectedProduct.type === 'packaging' ? '📦' : '⚗️';
 
                     card.innerHTML = `
                         ${actionBadge}
@@ -1523,7 +1175,13 @@
                             ⏰ ${new Date(product.timestamp).toLocaleString('es-ES')}
                         </div>
                         ${product.fragrance ? `<div style="background: linear-gradient(90deg, rgba(155, 89, 182, 0.1), transparent); padding: 10px; border-radius: 10px; margin: 10px 0; border-left: 3px solid #9b59b6; color: #b3b3e6;">🌸 ${product.fragrance}</div>` : ''}
-                        ${formulaHTML}
+                        <div style="background: rgba(155, 89, 182, 0.1); padding: 15px; border-radius: 10px; margin-top: 15px;">
+                            <strong style="color: #9b59b6;">Enviado a Google Sheets:</strong><br>
+                            📋 Producto: ${product.name.split(' (')[0]}<br>
+                            📏 Presentación: ${product.name.match(/\(([^)]+)\)/)?.[1] || ''}<br>
+                            🔢 Cantidad: ${product.quantity} unidades<br>
+                            🎯 Acción: ${product.action === 'prepare' ? 'Preparación' : 'Empaque'}
+                        </div>
                         <button class="btn btn-danger" onclick="removeProduct(${products.indexOf(product)})">
                             🗑️ Eliminar Local
                         </button>
@@ -1546,75 +1204,37 @@
         // Actualizar totales
         function updateTotals(productsToCalculate = products) {
             const totalProducts = productsToCalculate.reduce((sum, product) => sum + product.quantity, 0);
-            const rawMaterials = {};
+            const preparedProducts = productsToCalculate.filter(p => p.action === 'prepare').reduce((sum, product) => sum + product.quantity, 0);
+            const packagedProducts = productsToCalculate.filter(p => p.action === 'package').reduce((sum, product) => sum + product.quantity, 0);
 
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('totalPrepared').textContent = preparedProducts;
+            document.getElementById('totalPackaged').textContent = packagedProducts;
+
+            // Crear desglose por productos
+            const productBreakdown = {};
             productsToCalculate.forEach(product => {
-                const selectedProduct = allProducts.find(p => p.name === product.name.split(' (')[0]);
-                
-                if (selectedProduct && selectedProduct.type === 'packaging') {
-                    const productName = selectedProduct.name;
-                    
-                    if (rawMaterials[productName]) {
-                        rawMaterials[productName] += product.quantity;
-                    } else {
-                        rawMaterials[productName] = product.quantity;
-                    }
-                } else if (formulas[product.name]) {
-                    formulas[product.name].forEach(ingredient => {
-                        const totalNeeded = ingredient.quantity * product.quantity;
-                        if (rawMaterials[ingredient.name]) {
-                            rawMaterials[ingredient.name] += totalNeeded;
-                        } else {
-                            rawMaterials[ingredient.name] = totalNeeded;
-                        }
-                    });
+                const productName = product.name.split(' (')[0];
+                if (productBreakdown[productName]) {
+                    productBreakdown[productName] += product.quantity;
                 } else {
-                    // Intentar buscar la fórmula con el nombre del producto base + presentación
-                    const productBaseName = product.name.split(' (')[0];
-                    const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
-                    const formulaKey = `${productBaseName} (${presentation})`;
-                    
-                    if (formulas[formulaKey]) {
-                        formulas[formulaKey].forEach(ingredient => {
-                            const totalNeeded = ingredient.quantity * product.quantity;
-                            if (rawMaterials[ingredient.name]) {
-                                rawMaterials[ingredient.name] += totalNeeded;
-                            } else {
-                                rawMaterials[ingredient.name] = totalNeeded;
-                            }
-                        });
-                    }
+                    productBreakdown[productName] = product.quantity;
                 }
             });
 
-            document.getElementById('totalProducts').textContent = totalProducts;
-            document.getElementById('totalRawMaterials').textContent = Object.keys(rawMaterials).length;
-
-            const breakdown = document.getElementById('rawMaterialsBreakdown');
-            if (Object.keys(rawMaterials).length > 0) {
-                const sortedMaterials = Object.entries(rawMaterials).sort((a, b) => b[1] - a[1]);
+            const breakdown = document.getElementById('productBreakdown');
+            if (Object.keys(productBreakdown).length > 0) {
+                const sortedProducts = Object.entries(productBreakdown).sort((a, b) => b[1] - a[1]);
                 
                 breakdown.innerHTML = `
-                    <h3 style="margin-top: 40px; margin-bottom: 25px; color: white;">📊 Desglose de Materia Prima Utilizada:</h3>
+                    <h3 style="margin-top: 40px; margin-bottom: 25px; color: white;">📊 Desglose por Productos:</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                        ${sortedMaterials.map(([material, quantity]) => {
-                            const selectedProduct = allProducts.find(p => p.name === material);
-                            let unit;
-                            
-                            if (selectedProduct && selectedProduct.type === 'packaging') {
-                                const firstPresentation = selectedProduct.presentations[0] || '';
-                                unit = getUnitForPackaging(material, firstPresentation);
-                            } else {
-                                unit = getUnit(material);
-                            }
-                            
-                            return `
-                                <div class="total-item">
-                                    <div class="total-value">${quantity.toFixed(2)}</div>
-                                    <div class="total-label">${material} (${unit})</div>
-                                </div>
-                            `;
-                        }).join('')}
+                        ${sortedProducts.map(([productName, quantity]) => `
+                            <div class="total-item">
+                                <div class="total-value">${quantity}</div>
+                                <div class="total-label">${productName}</div>
+                            </div>
+                        `).join('')}
                     </div>
                 `;
             } else {
@@ -1633,3 +1253,4 @@
     </script>
 </body>
 </html>
+            
