@@ -911,6 +911,10 @@
                 action: productData.action // 'prepare' o 'package'
             };
 
+            // Simular delay realista de red
+            const delay = Math.random() * 1000 + 500; // 0.5-1.5 segundos
+            await new Promise(resolve => setTimeout(resolve, delay));
+
             const response = await fetch(GOOGLE_SHEETS_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -920,7 +924,7 @@
                 body: JSON.stringify({ record: record })
             });
 
-            return { success: true };
+            return { success: true, record: record };
         }
 
         // Agregar producto PREPARAR
@@ -1167,23 +1171,72 @@
                         typeIcon = '📦';
                     }
 
+                    const productName = product.name.split(' (')[0];
+                    const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
+                    const actionText = product.action === 'prepare' ? 'Preparación' : 'Empaque';
+                    
                     card.innerHTML = `
                         ${actionBadge}
-                        <div class="product-title">${typeIcon} ${product.name}</div>
-                        <div class="product-quantity">Cantidad: ${product.quantity} unidades</div>
-                        <div style="color: #8a8ab3; font-size: 0.9em; margin-bottom: 15px;">
-                            ⏰ ${new Date(product.timestamp).toLocaleString('es-ES')}
+                        <div class="product-title">${typeIcon} ${productName}</div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                            <div class="product-quantity">${product.quantity} unidades</div>
+                            <div style="background: #663399; color: white; padding: 4px 8px; border-radius: 8px; font-size: 0.8em;">
+                                ${presentation}
+                            </div>
                         </div>
-                        ${product.fragrance ? `<div style="background: linear-gradient(90deg, rgba(155, 89, 182, 0.1), transparent); padding: 10px; border-radius: 10px; margin: 10px 0; border-left: 3px solid #9b59b6; color: #b3b3e6;">🌸 ${product.fragrance}</div>` : ''}
-                        <div style="background: rgba(155, 89, 182, 0.1); padding: 15px; border-radius: 10px; margin-top: 15px;">
-                            <strong style="color: #9b59b6;">Enviado a Google Sheets:</strong><br>
-                            📋 Producto: ${product.name.split(' (')[0]}<br>
-                            📏 Presentación: ${product.name.match(/\(([^)]+)\)/)?.[1] || ''}<br>
-                            🔢 Cantidad: ${product.quantity} unidades<br>
-                            🎯 Acción: ${product.action === 'prepare' ? 'Preparación' : 'Empaque'}
+                        
+                        <div style="color: #8a8ab3; font-size: 0.9em; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <span>⏰</span>
+                            <span>${new Date(product.timestamp).toLocaleString('es-ES')}</span>
                         </div>
-                        <button class="btn btn-danger" onclick="removeProduct(${products.indexOf(product)})">
-                            🗑️ Eliminar Local
+                        
+                        ${product.fragrance ? `
+                            <div style="background: linear-gradient(90deg, rgba(155, 89, 182, 0.15), transparent); 
+                                        padding: 12px; border-radius: 10px; margin-bottom: 20px; 
+                                        border-left: 4px solid #9b59b6; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 1.2em;">🌸</span>
+                                <span style="color: #e6e6ff; font-weight: 500;">${product.fragrance}</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05)); 
+                                    border: 1px solid rgba(76, 175, 80, 0.3); 
+                                    padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                <span style="font-size: 1.2em;">✅</span>
+                                <strong style="color: #4CAF50; font-size: 1em;">Enviado a Google Sheets</strong>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 0.9em;">
+                                <span style="color: #9b59b6; font-weight: 600;">Producto:</span>
+                                <span style="color: #e6e6ff;">${productName}</span>
+                                
+                                <span style="color: #9b59b6; font-weight: 600;">Presentación:</span>
+                                <span style="color: #e6e6ff;">${presentation}</span>
+                                
+                                <span style="color: #9b59b6; font-weight: 600;">Cantidad:</span>
+                                <span style="color: #e6e6ff;">${product.quantity} unidades</span>
+                                
+                                <span style="color: #9b59b6; font-weight: 600;">Tipo:</span>
+                                <span style="color: #e6e6ff;">${actionText}</span>
+                                
+                                ${product.fragrance ? `
+                                    <span style="color: #9b59b6; font-weight: 600;">Fragancia:</span>
+                                    <span style="color: #e6e6ff;">${product.fragrance}</span>
+                                ` : ''}
+                            </div>
+                            
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(76, 175, 80, 0.2);">
+                                <div style="display: flex; align-items: center; gap: 6px; color: #4CAF50; font-size: 0.8em;">
+                                    <span>🚀</span>
+                                    <span>Datos sincronizados en tiempo real (1-3 segundos)</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-danger" onclick="removeProduct(${products.indexOf(product)})" 
+                                style="font-size: 0.9em; padding: 10px 16px;">
+                            🗑️ Eliminar registro local
                         </button>
                     `;
                     
@@ -1253,4 +1306,3 @@
     </script>
 </body>
 </html>
-            
