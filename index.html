@@ -613,32 +613,38 @@
         let dailyProduction = {};
         let currentAction = null;
 
-        // Lista de productos disponibles
+        // Lista de productos disponibles - ORGANIZADOS ALFABÉTICAMENTE
         const allProducts = [
-            // Productos con fórmulas
-            { name: "AMBIENTADOR CONCENTRADO", type: "formula", presentations: ["1L", "1 GALÓN"], needsFragrance: true },
-            { name: "SILICONA", type: "formula", presentations: ["60ml"], needsFragrance: false },
-            { name: "LLANTÍN", type: "formula", presentations: ["1L", "20L"], needsFragrance: false },
-            { name: "LIMPIDO AL 5%", type: "formula", presentations: ["1 GALÓN", "20L"], needsFragrance: false },
-            { name: "DESENGRASANTE", type: "formula", presentations: ["1 GALÓN", "20L"], needsFragrance: false },
-            { name: "DETERGENTE DE MANOS", type: "formula", presentations: ["1L", "20L"], needsFragrance: false },
-            { name: "LIMPIAVIDRIOS", type: "formula", presentations: ["1L", "1 GALÓN", "20L"], needsFragrance: false },
-            { name: "DESINFECTANTE", type: "formula", presentations: ["1L", "1 GALÓN", "20L"], needsFragrance: true },
-            { name: "DESINFECTANTE CANELA/LIMÓN", type: "formula", presentations: ["20L"], needsFragrance: false },
-            { name: "RESTAURADOR DE PARTES NEGRAS", type: "formula", presentations: ["1L", "1 GALÓN"], needsFragrance: false },
-            { name: "DETERGENTE LÍQUIDO", type: "formula", presentations: ["20L"], needsFragrance: false },
-            { name: "SHAMPOO POLARIZADO", type: "formula", presentations: ["20L"], needsFragrance: false },
-            { name: "SHAMPOO VEHÍCULO", type: "formula", presentations: ["40L", "80L", "160L"], needsFragrance: false },
+            // Productos con fórmulas (ALFABÉTICO)
+            { name: "Ambientador concentrado", type: "formula", presentations: ["1L", "1 Galón"], needsFragrance: true },
+            { name: "Champú polarizado", type: "formula", presentations: ["20L"], needsFragrance: false },
+            { name: "Champú vehículo", type: "formula", presentations: ["40L", "80L", "160L"], needsFragrance: false },
+            { name: "Desengrasante", type: "formula", presentations: ["1 Galón", "20L"], needsFragrance: false },
+            { name: "Desinfectante", type: "formula", presentations: ["1L", "1 Galón", "20L"], needsFragrance: true },
+            { name: "Desinfectante canela/limón", type: "formula", presentations: ["20L"], needsFragrance: false },
+            { name: "Detergente de manos", type: "formula", presentations: ["1L", "20L"], needsFragrance: false },
+            { name: "Detergente líquido", type: "formula", presentations: ["20L"], needsFragrance: false },
+            { name: "Limpiavidrios", type: "formula", presentations: ["1L", "1 Galón", "20L"], needsFragrance: false },
+            { name: "Limpido al 5%", type: "formula", presentations: ["1 Galón", "20L"], needsFragrance: false },
+            { name: "Llantín", type: "formula", presentations: ["1L", "20L"], needsFragrance: false },
+            { name: "Restaurador de partes negras", type: "formula", presentations: ["1L", "1 Galón"], needsFragrance: false },
+            { name: "Silicona", type: "formula", presentations: ["60ml"], needsFragrance: false },
             
-            // Productos de empaque
+            // Productos de empaque (ALFABÉTICO)
+            { name: "Ácido cítrico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
             { name: "Ácido nítrico", type: "packaging", presentations: ["Galón"], needsFragrance: false },
+            { name: "Ácido oxálico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
             { name: "Ácido sulfónico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
             { name: "Alcohol cetílico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
-            { name: "Alcohol etílico", type: "packaging", presentations: ["Litro", "Galón", "20Lts"], needsFragrance: false },
             { name: "Alcohol desodorizado", type: "packaging", presentations: ["Litro"], needsFragrance: false },
+            { name: "Alcohol etílico", type: "packaging", presentations: ["Litro", "Galón", "20Lts"], needsFragrance: false },
             { name: "Alcohol propílico", type: "packaging", presentations: ["Galón", "Litro"], needsFragrance: false },
+            { name: "Alka", type: "packaging", presentations: ["Kg"], needsFragrance: false },
+            { name: "Antiincrustante", type: "packaging", presentations: ["Kg"], needsFragrance: false },
             { name: "Betaína", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
+            { name: "Bisulfito de sodio", type: "packaging", presentations: ["Kg"], needsFragrance: false },
             { name: "Butil glicol", type: "packaging", presentations: ["Litro", "1/2 Litro"], needsFragrance: false },
+            { name: "Champú vehículo", type: "packaging", presentations: ["Litro", "Galón", "20Lts"], needsFragrance: false },
             { name: "Cocoamida", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
             { name: "Creolina", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
             { name: "Dodigen", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
@@ -648,17 +654,12 @@
             { name: "Nonil", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
             { name: "Procide", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
             { name: "Rinsol", type: "packaging", presentations: ["Kg", "1/2 Kg"], needsFragrance: false },
+            { name: "Sensableach", type: "packaging", presentations: ["Litro"], needsFragrance: false },
             { name: "Silicona antiespumante", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
             { name: "Silicona emulsión", type: "packaging", presentations: ["Kg", "1/2 Kg"], needsFragrance: false },
             { name: "Soda", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
-            { name: "Sensableach", type: "packaging", presentations: ["Litro"], needsFragrance: false },
-            { name: "Varsol", type: "packaging", presentations: ["1/2 Litro", "Galón", "Litro"], needsFragrance: false },
             { name: "Tpf (tripolifosfato)", type: "packaging", presentations: ["Kg"], needsFragrance: false },
-            { name: "Ácido cítrico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
-            { name: "Ácido oxálico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
-            { name: "Antiincrustante", type: "packaging", presentations: ["Kg"], needsFragrance: false },
-            { name: "Bicarbonato de sodio", type: "packaging", presentations: ["Kg"], needsFragrance: false },
-            { name: "Bisulfito de sodio", type: "packaging", presentations: ["Kg"], needsFragrance: false }
+            { name: "Varsol", type: "packaging", presentations: ["1/2 Litro", "Galón", "Litro"], needsFragrance: false }
         ];
 
         // Lista de fragancias
@@ -960,7 +961,7 @@
                 employee: 'Sistema',
                 fragrance: selectedFragrance || null,
                 productType: selectedProduct.type,
-                action: 'prepare'
+                action: 'preparado'
             };
 
             const saveButton = document.getElementById('prepareSaveButtonText');
@@ -1052,7 +1053,7 @@
                 employee: 'Sistema',
                 fragrance: null,
                 productType: selectedProduct.type,
-                action: 'package'
+                action: 'empacado'
             };
 
             const saveButton = document.getElementById('packageSaveButtonText');
@@ -1163,17 +1164,17 @@
                     let actionBadge = '';
                     let typeIcon = '';
                     
-                    if (product.action === 'prepare') {
+                    if (product.action === 'preparado') {
                         actionBadge = '<div style="display: inline-block; background: linear-gradient(45deg, #663399, #9b59b6); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; margin-bottom: 15px;">⚗️ PREPARADO</div>';
                         typeIcon = '⚗️';
-                    } else if (product.action === 'package') {
+                    } else if (product.action === 'empacado') {
                         actionBadge = '<div style="display: inline-block; background: linear-gradient(45deg, #8e24aa, #9c27b0); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; margin-bottom: 15px;">📦 EMPACADO</div>';
                         typeIcon = '📦';
                     }
 
                     const productName = product.name.split(' (')[0];
                     const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
-                    const actionText = product.action === 'prepare' ? 'Preparación' : 'Empaque';
+                    const actionText = product.action === 'preparado' ? 'Preparación' : 'Empaque';
                     
                     card.innerHTML = `
                         ${actionBadge}
@@ -1257,8 +1258,8 @@
         // Actualizar totales
         function updateTotals(productsToCalculate = products) {
             const totalProducts = productsToCalculate.reduce((sum, product) => sum + product.quantity, 0);
-            const preparedProducts = productsToCalculate.filter(p => p.action === 'prepare').reduce((sum, product) => sum + product.quantity, 0);
-            const packagedProducts = productsToCalculate.filter(p => p.action === 'package').reduce((sum, product) => sum + product.quantity, 0);
+            const preparedProducts = productsToCalculate.filter(p => p.action === 'preparado').reduce((sum, product) => sum + product.quantity, 0);
+            const packagedProducts = productsToCalculate.filter(p => p.action === 'empacado').reduce((sum, product) => sum + product.quantity, 0);
 
             document.getElementById('totalProducts').textContent = totalProducts;
             document.getElementById('totalPrepared').textContent = preparedProducts;
