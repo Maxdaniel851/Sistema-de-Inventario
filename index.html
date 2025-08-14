@@ -152,6 +152,10 @@
             overflow: hidden;
         }
 
+        .action-card.wide {
+            grid-column: span 2;
+        }
+
         .action-card.active {
             border-color: #9b59b6;
             box-shadow: 
@@ -447,6 +451,10 @@
             .action-selector {
                 grid-template-columns: 1fr;
             }
+            
+            .action-card.wide {
+                grid-column: span 1;
+            }
         }
     </style>
 </head>
@@ -476,7 +484,7 @@
             <!-- Selector de Acción -->
             <div class="section">
                 <h2>🎯 Seleccione una Acción</h2>
-                <p style="color: #8a8ab3; margin-bottom: 25px; text-align: center;">Elija si desea preparar productos con fórmula o empacar productos directos.</p>
+                <p style="color: #8a8ab3; margin-bottom: 25px; text-align: center;">Elija la acción que desea realizar con los productos.</p>
                 
                 <div class="action-selector">
                     <div class="action-card" onclick="selectAction('prepare')">
@@ -489,6 +497,12 @@
                         <span class="action-icon">📦</span>
                         <div class="action-title">Empacar</div>
                         <div class="action-description">Productos de empaque directo en relación 1:1</div>
+                    </div>
+                    
+                    <div class="action-card wide" onclick="selectAction('unpack')">
+                        <span class="action-icon">📤</span>
+                        <div class="action-title">Desempacar</div>
+                        <div class="action-description">Desarmar productos grandes en presentaciones más pequeñas</div>
                     </div>
                 </div>
             </div>
@@ -572,6 +586,41 @@
                 <div id="packageSaveStatus" style="margin-top: 20px;"></div>
             </div>
 
+            <!-- Formulario de desempaque -->
+            <div class="section form-container" id="unpackForm">
+                <h2>📤 Desempacar Productos</h2>
+                <p style="color: #8a8ab3; margin-bottom: 25px; text-align: center;">Complete los campos para registrar el desempaque de productos grandes a presentaciones más pequeñas.</p>
+                
+                <div class="form-group">
+                    <label for="unpackProductSearch">Producto a Desempacar:</label>
+                    <div style="position: relative;">
+                        <input type="text" id="unpackProductSearch" placeholder="Haga clic para seleccionar producto..." autocomplete="off" readonly required>
+                        <div id="unpackProductDropdown" class="dropdown"></div>
+                    </div>
+                    <input type="hidden" id="selectedUnpackProduct">
+                </div>
+                
+                <div class="form-group">
+                    <label for="unpackProductPresentation">Presentación:</label>
+                    <select id="unpackProductPresentation" required>
+                        <option value="">Primero seleccione un producto</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="unpackProductQuantity">Cantidad a Desempacar:</label>
+                    <input type="number" id="unpackProductQuantity" placeholder="¿Cuántas unidades se van a desempacar?" min="1" required>
+                </div>
+                
+                <div style="display: flex; justify-content: center;">
+                    <button class="btn" onclick="addUnpackProduct()">
+                        <span id="unpackSaveButtonText">Registrar Desempaque</span>
+                    </button>
+                </div>
+                
+                <div id="unpackSaveStatus" style="margin-top: 20px;"></div>
+            </div>
+
             <!-- Lista de productos -->
             <div class="section">
                 <h2>📊 Producción Registrada</h2>
@@ -598,6 +647,10 @@
                         <div class="total-value" id="totalPackaged">0</div>
                         <div class="total-label">Productos Empacados</div>
                     </div>
+                    <div class="total-item">
+                        <div class="total-value" id="totalUnpacked">0</div>
+                        <div class="total-label">Productos Desempacados</div>
+                    </div>
                 </div>
                 <div id="productBreakdown"></div>
             </div>
@@ -613,7 +666,7 @@
         let dailyProduction = {};
         let currentAction = null;
 
-        // Lista de productos disponibles - ORGANIZADOS ALFABÉTICAMENTE
+        // Lista de productos disponibles - ACTUALIZADA CON NUEVOS PRODUCTOS Y DESEMPAQUE
         const allProducts = [
     // Productos con fórmulas (ALFABÉTICO)
     { name: "Ambientador concentrado", type: "formula", presentations: ["1L", "1 Galón"], needsFragrance: true },
@@ -630,7 +683,7 @@
     { name: "Restaurador de partes negras", type: "formula", presentations: ["1L", "1 Galón"], needsFragrance: false },
     { name: "Silicona", type: "formula", presentations: ["60ml"], needsFragrance: false },
     
-    // Productos de empaque (ALFABÉTICO)
+    // Productos de empaque (ALFABÉTICO) - AGREGADOS DESENGRASANTE Y DETERGENTE LÍQUIDO
     { name: "Ácido cítrico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
     { name: "Ácido nítrico", type: "packaging", presentations: ["Galón"], needsFragrance: false },
     { name: "Ácido oxálico", type: "packaging", presentations: ["Kg"], needsFragrance: false },
@@ -647,6 +700,8 @@
     { name: "Champú vehículo", type: "packaging", presentations: ["Litro", "Galón", "20Lts"], needsFragrance: false },
     { name: "Cocoamida", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
     { name: "Creolina", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
+    { name: "Desengrasante", type: "packaging", presentations: ["1L", "1 Galón"], needsFragrance: false },
+    { name: "Detergente líquido", type: "packaging", presentations: ["1L", "1 Galón"], needsFragrance: false },
     { name: "Dodigen", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
     { name: "Genapol 70%", type: "packaging", presentations: ["Kg"], needsFragrance: false },
     { name: "Glicerina", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
@@ -659,7 +714,14 @@
     { name: "Silicona emulsión", type: "packaging", presentations: ["Kg", "1/2 Kg"], needsFragrance: false },
     { name: "Soda", type: "packaging", presentations: ["1/2 Kg", "Kg"], needsFragrance: false },
     { name: "Tpf (tripolifosfato)", type: "packaging", presentations: ["Kg"], needsFragrance: false },
-    { name: "Varsol", type: "packaging", presentations: ["1/2 Litro", "Galón", "Litro"], needsFragrance: false }
+    { name: "Varsol", type: "packaging", presentations: ["1/2 Litro", "Galón", "Litro"], needsFragrance: false },
+    
+    // Productos para desempacar (ALFABÉTICO) - SOLO 5 PRODUCTOS ESPECÍFICOS
+    { name: "Alcohol etílico", type: "unpack", presentations: ["1L", "1 Galón"], needsFragrance: false },
+    { name: "Champú vehículo", type: "unpack", presentations: ["1L", "1 Galón"], needsFragrance: false },
+    { name: "Desengrasante", type: "unpack", presentations: ["1L", "1 Galón"], needsFragrance: false },
+    { name: "Detergente líquido", type: "unpack", presentations: ["1L", "1 Galón"], needsFragrance: false },
+    { name: "Hipoclorito de sodio", type: "unpack", presentations: ["1L", "1 Galón"], needsFragrance: false }
 ];
 
         // Lista de fragancias
@@ -717,8 +779,11 @@
                 document.querySelector('.action-card:first-child').classList.add('active');
                 document.getElementById('prepareForm').classList.add('active');
             } else if (action === 'package') {
-                document.querySelector('.action-card:last-child').classList.add('active');
+                document.querySelector('.action-card:nth-child(2)').classList.add('active');
                 document.getElementById('packageForm').classList.add('active');
+            } else if (action === 'unpack') {
+                document.querySelector('.action-card.wide').classList.add('active');
+                document.getElementById('unpackForm').classList.add('active');
             }
         }
 
@@ -794,7 +859,42 @@
             });
         }
 
-        // Configurar selector de fragancias
+        // Configurar selector de productos para DESEMPACAR
+        function setupUnpackProductSearch() {
+            const searchInput = document.getElementById('unpackProductSearch');
+            const dropdown = document.getElementById('unpackProductDropdown');
+            const hiddenInput = document.getElementById('selectedUnpackProduct');
+
+            searchInput.addEventListener('focus', function() {
+                dropdown.innerHTML = '';
+                
+                const unpackProducts = allProducts.filter(p => p.type === 'unpack');
+                
+                unpackProducts.forEach(product => {
+                    const option = document.createElement('div');
+                    option.className = 'dropdown-option';
+                    option.textContent = product.name;
+                    
+                    option.addEventListener('click', function() {
+                        searchInput.value = product.name;
+                        hiddenInput.value = product.name;
+                        dropdown.style.display = 'none';
+                        updateUnpackPresentations();
+                    });
+                    
+                    dropdown.appendChild(option);
+                });
+                
+                dropdown.style.display = 'block';
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+        
         function setupPrepareFragranceSearch() {
             const searchInput = document.getElementById('prepareFragranceSearch');
             const dropdown = document.getElementById('prepareFragranceDropdown');
@@ -896,6 +996,37 @@
             });
         }
 
+        // Actualizar presentaciones para DESEMPACAR
+        function updateUnpackPresentations() {
+            const selectedProductName = document.getElementById('selectedUnpackProduct').value;
+            const presentationSelect = document.getElementById('unpackProductPresentation');
+            
+            presentationSelect.innerHTML = '';
+            
+            const selectedProduct = allProducts.find(p => p.name === selectedProductName && p.type === 'unpack');
+            
+            if (!selectedProduct) {
+                presentationSelect.innerHTML = '<option value="">Primero seleccione un producto</option>';
+                return;
+            }
+            
+            const availablePresentations = selectedProduct.presentations || [];
+            
+            if (availablePresentations.length === 0) {
+                presentationSelect.innerHTML = '<option value="">No hay presentaciones disponibles</option>';
+                return;
+            }
+            
+            presentationSelect.innerHTML = '<option value="">Seleccione una presentación</option>';
+            
+            availablePresentations.forEach(presentation => {
+                const option = document.createElement('option');
+                option.value = presentation;
+                option.textContent = presentation;
+                presentationSelect.appendChild(option);
+            });
+        }
+
         // Función simplificada para enviar datos a Google Sheets
         async function sendToGoogleSheets(productData) {
             const currentTime = new Date().toLocaleTimeString('es-ES');
@@ -909,7 +1040,7 @@
                 presentation: productData.name.match(/\(([^)]+)\)/)?.[1] || '', // Solo la presentación
                 fragrance: productData.fragrance || 'N/A',
                 quantity: productData.quantity,
-                action: productData.action // 'prepare' o 'package'
+                action: productData.action // 'preparado', 'empacado' o 'desempacado'
             };
 
             // Simular delay realista de red
@@ -1029,7 +1160,7 @@
             }
         }
 
-        // Agregar producto EMPACAR - AHORA TAMBIÉN ENVÍA A GOOGLE SHEETS
+        // Agregar producto EMPACAR
         async function addPackageProduct() {
             const selectedProductName = document.getElementById('selectedPackageProduct').value;
             const presentation = document.getElementById('packageProductPresentation').value;
@@ -1063,7 +1194,6 @@
             statusDiv.innerHTML = '<div style="color: #9b59b6;">📦 Enviando datos a Google Sheets...</div>';
 
             try {
-                // AHORA SÍ ENVÍA A GOOGLE SHEETS
                 await sendToGoogleSheets(productRecord);
                 
                 products.push(productRecord);
@@ -1113,6 +1243,94 @@
                 
                 setTimeout(() => {
                     saveButton.textContent = 'Registrar Empaque';
+                }, 3000);
+            }
+        }
+
+        // Agregar producto DESEMPACAR - CORREGIDO PARA ENVIAR A GOOGLE SHEETS
+        async function addUnpackProduct() {
+            const selectedProductName = document.getElementById('selectedUnpackProduct').value;
+            const presentation = document.getElementById('unpackProductPresentation').value;
+            const quantity = parseInt(document.getElementById('unpackProductQuantity').value);
+            const date = new Date().toISOString().split('T')[0];
+
+            if (!selectedProductName || !presentation || !quantity || quantity <= 0) {
+                alert('Por favor, complete todos los campos correctamente.');
+                return;
+            }
+
+            const selectedProduct = allProducts.find(p => p.name === selectedProductName && p.type === 'unpack');
+            
+            let fullProductName = `${selectedProductName} (${presentation})`;
+            
+            const productRecord = {
+                name: fullProductName,
+                quantity: quantity,
+                date: date,
+                timestamp: new Date().toISOString(),
+                employee: 'Sistema',
+                fragrance: null,
+                productType: selectedProduct.type,
+                action: 'desempacado'
+            };
+
+            const saveButton = document.getElementById('unpackSaveButtonText');
+            const statusDiv = document.getElementById('unpackSaveStatus');
+            
+            saveButton.innerHTML = '<span class="loading-spinner"></span> Guardando...';
+            statusDiv.innerHTML = '<div style="color: #9b59b6;">📤 Enviando datos a Google Sheets...</div>';
+
+            try {
+                // AHORA SÍ ENVÍA A GOOGLE SHEETS
+                await sendToGoogleSheets(productRecord);
+                
+                products.push(productRecord);
+                
+                if (!dailyProduction[date]) {
+                    dailyProduction[date] = [];
+                }
+                dailyProduction[date].push(productRecord);
+
+                updateProductsList();
+                updateTotals();
+                
+                // Limpiar formulario
+                document.getElementById('unpackProductSearch').value = '';
+                document.getElementById('selectedUnpackProduct').value = '';
+                document.getElementById('unpackProductPresentation').innerHTML = '<option value="">Primero seleccione un producto</option>';
+                document.getElementById('unpackProductQuantity').value = '';
+                
+                saveButton.textContent = '¡Desempacado!';
+                statusDiv.innerHTML = `<div style="color: #9b59b6;">✓ ${fullProductName} desempacado exitosamente: ${quantity} unidades</div>`;
+                
+                setTimeout(() => {
+                    saveButton.textContent = 'Registrar Desempaque';
+                    statusDiv.innerHTML = '';
+                }, 3000);
+
+            } catch (error) {
+                // Si falla el envío a Google Sheets, guardar localmente
+                products.push(productRecord);
+                
+                if (!dailyProduction[date]) {
+                    dailyProduction[date] = [];
+                }
+                dailyProduction[date].push(productRecord);
+
+                updateProductsList();
+                updateTotals();
+                
+                saveButton.textContent = '⚠️ Guardado Local';
+                statusDiv.innerHTML = `<div style="color: #ff9500;">⚠️ Error conectando con Google Sheets. Datos guardados localmente.</div>`;
+                
+                // Limpiar formulario
+                document.getElementById('unpackProductSearch').value = '';
+                document.getElementById('selectedUnpackProduct').value = '';
+                document.getElementById('unpackProductPresentation').innerHTML = '<option value="">Primero seleccione un producto</option>';
+                document.getElementById('unpackProductQuantity').value = '';
+                
+                setTimeout(() => {
+                    saveButton.textContent = 'Registrar Desempaque';
                 }, 3000);
             }
         }
@@ -1170,11 +1388,14 @@
                     } else if (product.action === 'empacado') {
                         actionBadge = '<div style="display: inline-block; background: linear-gradient(45deg, #8e24aa, #9c27b0); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; margin-bottom: 15px;">📦 EMPACADO</div>';
                         typeIcon = '📦';
+                    } else if (product.action === 'desempacado') {
+                        actionBadge = '<div style="display: inline-block; background: linear-gradient(45deg, #ff9800, #f57c00); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; margin-bottom: 15px;">📤 DESEMPACADO</div>';
+                        typeIcon = '📤';
                     }
 
                     const productName = product.name.split(' (')[0];
                     const presentation = product.name.match(/\(([^)]+)\)/)?.[1] || '';
-                    const actionText = product.action === 'preparado' ? 'Preparación' : 'Empaque';
+                    const actionText = product.action === 'preparado' ? 'Preparación' : product.action === 'empacado' ? 'Empaque' : 'Desempaque';
                     
                     card.innerHTML = `
                         ${actionBadge}
@@ -1260,10 +1481,12 @@
             const totalProducts = productsToCalculate.reduce((sum, product) => sum + product.quantity, 0);
             const preparedProducts = productsToCalculate.filter(p => p.action === 'preparado').reduce((sum, product) => sum + product.quantity, 0);
             const packagedProducts = productsToCalculate.filter(p => p.action === 'empacado').reduce((sum, product) => sum + product.quantity, 0);
+            const unpackedProducts = productsToCalculate.filter(p => p.action === 'desempacado').reduce((sum, product) => sum + product.quantity, 0);
 
             document.getElementById('totalProducts').textContent = totalProducts;
             document.getElementById('totalPrepared').textContent = preparedProducts;
             document.getElementById('totalPackaged').textContent = packagedProducts;
+            document.getElementById('totalUnpacked').textContent = unpackedProducts;
 
             // Crear desglose por productos
             const productBreakdown = {};
@@ -1300,6 +1523,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupPrepareProductSearch();
             setupPackageProductSearch();
+            setupUnpackProductSearch();
             setupPrepareFragranceSearch();
             updateProductsList();
             updateTotals();
